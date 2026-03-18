@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+    <!-- Generated automatically by AFRAME Exporter for Blender - https://silverslade.itch.io/a-frame-blender-exporter -->
+    <head>
+        <title>WebXR Application</title>
+        <link rel="icon" type="image/png" href="favicon.ico"/>
+        <meta name="description" content="3D Application">
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.0/dist/aframe-extras.min.js"></script>
+        <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+        <script src="https://unpkg.com/aframe-event-set-component@4.2.1/dist/aframe-event-set-component.min.js"></script> 
+        <script src="https://unpkg.com/aframe-proxy-event-component/dist/aframe-proxy-event-component.min.js"></script>       
+        <script src="https://rawgit.com/rdub80/aframe-gui/master/dist/aframe-gui.min.js"></script>
+        <script type="text/javascript" src="js/webxr.js"></script>
+        <script type="text/javascript" src="js/joystick.js"></script>
+        <script type="text/javascript" src="js/camera-cube-env.js"></script>
+        
+        <link rel="stylesheet" type="text/css" href="style.css">
+
+        <script>
+                    AFRAME.registerComponent("material-values", {
+                multiple: true,
+                schema: {
+                    materialName: { type: "string", default: "" },
+                    color: { type: "color", default: "" },
+                    map: { type: "string", default: "" },
+                    metalness: { type: "number", default: -1, min: 0, max: 1 },
+                    roughness: { type: "number", default: -1, min: 0, max: 1 },
+                    opacity: { type: "number", default: 1, min: 0, max: 1 }
+                },
+
+                events: {
+                    "model-loaded": function () {
+                    this.update();
+                    },
+                },
+
+                init() {
+                    this.rendererSystem = this.el.sceneEl.systems.renderer;
+                },
+
+                update: function () {
+                    const mesh = this.el.getObject3D("mesh");
+                    if (!mesh) return;
+
+                    const materialName = this.data.materialName;
+                    const color = this.data.color;
+                    const map = this.data.map;
+                    const metalness = this.data.metalness;
+                    const roughness = this.data.roughness;
+                    const opacity = this.data.opacity;
+                    const materialSeen = new Set();
+                    mesh.traverse((node) => {
+                    if (node.material && node.material.name === materialName) {
+                        if (materialSeen.has(node.material.name)) return;
+
+                        if (color !== "") {
+                        node.material.color.set(color);
+                        // The following line calls node.material.color.convertSRGBToLinear() when <a-scene renderer="colorManagement:true">
+                        this.rendererSystem.applyColorCorrection(node.material.color);
+                        } else {
+                        this.data.color = "#" + node.material.color.getHexString();
+                        }
+
+                        if (metalness !== -1) {
+                        node.material.metalness = metalness;
+                        } else {
+                        this.data.metalness = node.material.metalness;
+                        }
+
+                        if (roughness !== -1) {
+                        node.material.roughness = roughness;
+                        } else {
+                        this.data.roughness = node.material.roughness;
+                        }
+
+                        if (map) {
+                        const imageSrc = map;
+                        const loader = new THREE.TextureLoader();
+                        loader.load(
+                            imageSrc,
+                            function (texture) {
+                            if (node.material.map) {
+                                texture.encoding = node.material.map.encoding;
+                                texture.flipY = node.material.map.flipY;
+                                texture.offset.copy(node.material.map.offset);
+                                texture.repeat.copy(node.material.map.repeat);
+                                texture.wrapS = node.material.map.wrapS;
+                                texture.wrapT = node.material.map.wrapT;
+                                node.material.map.dispose();
+                            }
+                            node.material.map = texture;
+                            texture.needsUpdate = true;
+                            node.material.needsUpdate = true;
+                            },
+                            undefined,
+                            function () {
+                            console.error(`Error loading ${imageSrc}`);
+                            }
+                        );
+                        }
+                        node.material.opacity = opacity;
+                        // if opacity is 1, keep the current transparent value, that may be true
+                        if (opacity < 1) {
+                        node.material.transparent = opacity < 1;
+                        }
+                        node.material.needsUpdate = true;
+                        node.visible = opacity !== 0;
+                        materialSeen.add(node.material.name);
+                    }
+                    });
+                    materialSeen.clear();
+                },
+                });
+
+                            /* global AFRAME */
+            AFRAME.registerComponent('play-on-click', {
+            init: function () {
+                this.onClick = this.onClick.bind(this);
+            },
+            play: function () {
+                window.addEventListener('click', this.onClick);
+            },
+            pause: function () {
+                window.removeEventListener('click', this.onClick);
+            },
+            onClick: function (evt) {
+                var videoEl = this.el.getAttribute('material').src;
+                if (!videoEl) { return; }
+                this.el.object3D.visible = true;
+                videoEl.play();
+            }
+            });
+
+    </script>
+    </head>
+    <body onload="init();">
+        <div id="creditos" style="position: fixed; width:98%; height: auto; right:-75%;bottom: 40px; color:rgb(138, 137, 137);font-family: Verdana;font-size: smaller; z-index: 9999; opacity: 0.65">Creado por: JoseMaría Moreno 2025</div>
+        <a-scene  joystick shadow="type: pcfsoft; autoUpdate: true;" renderer="antialias: true; colorManagement: true; physicallyCorrectLights: false; sortObjects: true; exposure:0.7; toneMapping: AgX; shadows: true"
+                    reflection="directionalLight:#dirlight;"                    
+                    inspector="url: https://cdn.jsdelivr.net/gh/c-frame/aframe-editor@1.7.x/dist/aframe-editor.min.js">
+            <!-- Assets -->
+            <a-assets>
+				<a-asset-item id="SalaCurriculum" src="./assets/index.glb"></a-asset-item>				
+               
+            </a-assets>            
+
+            <!-- Entities -->
+            
+			<a-entity id="Sala" gltf-model="#SalaCurriculum" scale="1 1 1" position="0 0 0" visible="true" shadow="cast: true" material-values__zocalo="materialName: Material.014; color: #1d1825; metalness: 0; roughness: 1; opacity: 1" ></a-entity>
+			
+            
+            <a-entity id="Xbtn_abrirPanel"  class="clickable" gltf-model="#btn_abrir_panel" position="0 0 0" shadow="cast: true"
+                      proxy-event__abrir="event: mouseenter; to: #parent_cajatexto; as: abrir"></a-entity>
+            <a-entity id="Xbtn_cerrarPanel" class="clickable" gltf-model="#btn_cerrar_panel" position="0 0 0" shadow="cast: true"
+                      proxy-event__cerrar="event: mouseenter; to: #parent_cajatexto; as: cerrar"></a-entity>
+                       
+            
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-5.79 0.042 -1.2" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-5.79 0.042 -6.6" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-4.833 0.042 -10.881" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-2.092 0.042 -13.88" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="1.416 0.042 -14.12" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-3.66 0.042 -0.6" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-1 0.042 -0.6" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="4.434 0.042 -11.62" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="2.417 0.042 -4.55" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="-1.002 0.042 -6.653" material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+            <a-cylinder checkpoint class="clickable" radius="0.6" height="0.01" position="3.510 0.042 -0.58"  material="shader: flat; opacity: 0.2; color: white"></a-cylinder>
+
+
+            <!-- Camera -->
+            <a-entity id="player" 
+                position="0 -0.2 0" 
+                movement-controls="controls: checkpoint"
+                checkpoint-controls="mode: teleport; animateSpeed: 70; arrivalTolerance: 1;threshold: 0.1"
+                wasd-controls="acceleration: 10"
+                >
+                <a-entity id="camera" 
+                    camera="near: 0.001" 
+                    position="0 1.7000000476837158 0" 
+                    look-controls="pointerLockEnabled: true"
+                    >
+                   <a-entity cursor="fuse: true; fuseTimeout: 500; rayOrigin: entity"
+            position="0 0 -1"
+            geometry="primitive: ring; radiusInner: 0.007; radiusOuter: 0.01"
+            material="color: white; opacity:0.4; shader: flat" raycaster="objects: .clickable"></a-entity>
+            </a-entity>
+            
+            </a-entity>
+                    <a-entity id="leftHand" oculus-touch-controls="hand: left" vive-controls="hand: left"></a-entity>
+					<a-entity id="rightHand" laser-controls oculus-touch-controls="hand: right" vive-controls="hand: right" raycaster = "far: 10.0; interval: 1500.0; objects: .clickable,.links"></a-entity>
+            </a-entity>
+
+            <!-- Lights -->
+            
+			
+			<a-entity id="dirlight" position="-0.6121258735656738 -14.279 -14.279123306274414" light="castShadow:true; color:#594bff; distance:40.0; type:directional; intensity:0.1; shadowBias: -0.001; shadowCameraFar: 501.02; shadowCameraBottom: 12; shadowCameraFov: 101.79; shadowCameraNear: 0; shadowCameraTop: -5; shadowCameraRight: 10; shadowCameraLeft: -10; shadowRadius: 2;"></a-entity>
+            
+            <!-- Sky -->
+            <a-sky src="#sky" material="" geometry="" rotation="0 90 0"></a-sky>
+        </a-scene>
+    </body>
+</html>
+<!-- Generated automatically by AFRAME Exporter for Blender - https://silverslade.itch.io/a-frame-blender-exporter -->
